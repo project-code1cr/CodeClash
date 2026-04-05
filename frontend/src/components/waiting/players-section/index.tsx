@@ -4,15 +4,16 @@ import { useWaitingRoomStore } from "@/store/useWaitingRoomStore";
 import { Swords, Users } from "lucide-react";
 
 export default function PlayersSection() {
-  const { activeUsers, isCreator } = useWaitingRoomStore();
+  const { activeUsers, isCreator, roomInfo } = useWaitingRoomStore();
 
   const active = activeUsers();
+  const isPrivate = Boolean(roomInfo?.isPrivate);
   return (
     <div className="mb-12">
       <div className="flex items-center justify-center gap-3 mb-6">
         <Users className="w-5 h-5 text-muted-foreground" />
         <span className="text-muted-foreground">
-          Players ({active.length}/2)
+          {isPrivate ? `Solo (${active.length}/1)` : `Players (${active.length}/2)`}
         </span>
       </div>
 
@@ -36,19 +37,21 @@ export default function PlayersSection() {
         <div className="flex flex-col items-center gap-2">
           <motion.div
             animate={{
-              scale: activeUsers?.length! >= 2 ? [1, 1.1, 1] : 1,
-              opacity: activeUsers?.length! >= 2 ? 1 : 0.3,
+              scale: !isPrivate && active.length >= 2 ? [1, 1.1, 1] : 1,
+              opacity: !isPrivate && active.length >= 2 ? 1 : 0.3,
             }}
             transition={{
               duration: 0.5,
-              repeat: activeUsers?.length! >= 2 ? Infinity : 0,
+              repeat: !isPrivate && active.length >= 2 ? Infinity : 0,
               repeatDelay: 1,
             }}
             className="w-12 h-12 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center"
           >
             <Swords className="w-5 h-5 text-accent" />
           </motion.div>
-          <span className="text-xs text-muted-foreground font-medium">VS</span>
+          <span className="text-xs text-muted-foreground font-medium">
+            {isPrivate ? "SOLO" : "VS"}
+          </span>
         </div>
 
         {/* Player 2 */}
@@ -81,7 +84,7 @@ export default function PlayersSection() {
             )}
           </div>
           <span className="text-sm font-medium text-muted-foreground">
-            {active.length >= 2 ? active[1] : "Waiting..."}
+            {isPrivate ? "No opponent" : active.length >= 2 ? active[1] : "Waiting..."}
           </span>
         </motion.div>
       </div>

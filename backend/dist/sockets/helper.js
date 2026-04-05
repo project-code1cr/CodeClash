@@ -12,6 +12,9 @@ function findWinner(room) {
     const isJoinerSubmitted = room.submissions?.joiner?.submitted;
     const creatorTime = room.submissions?.creator?.submissionTime;
     const joinerTime = room.submissions?.joiner?.submissionTime;
+    if (room.isPrivate) {
+        return isCreatorSubmitted ? room.creatorId : "draw";
+    }
     if (isCreatorSubmitted && !isJoinerSubmitted) {
         return room.creatorId;
     }

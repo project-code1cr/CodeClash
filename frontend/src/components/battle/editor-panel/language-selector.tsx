@@ -1,10 +1,28 @@
 import { Button } from "@/components/ui/button";
-import { useBattleArenaStore } from "@/store/useBattleArenaStore";
+import {
+  ProgrammingLanguage,
+  useBattleArenaStore,
+} from "@/store/useBattleArenaStore";
 import { FileCode, Play, Send } from "lucide-react";
 
 export default function LanguageSelector() {
+  const {
+    language,
+    setLanguage,
+    roomInfo,
+    isRunning,
+    setIsRunning,
+    setOutput,
+    setActiveTab,
+    setShowPrivateActions,
+  } = useBattleArenaStore();
 
-  const { isRunning, setIsRunning, setOutput, setActiveTab} = useBattleArenaStore();
+  const languageOptions: Array<{ label: string; value: ProgrammingLanguage }> =
+    [
+      { label: "JavaScript", value: "javascript" },
+      { label: "C++", value: "cpp" },
+      { label: "Java", value: "java" },
+    ];
 
   const runCode = () => {
     setIsRunning(true);
@@ -31,6 +49,7 @@ All test cases passed!`);
 
   const submitCode = () => {
     setIsRunning(true);
+    setShowPrivateActions(false);
     setTimeout(() => {
       setOutput(`Submitting solution...
 
@@ -49,14 +68,28 @@ Runtime: 52ms (faster than 89%)
 Memory: 42.1 MB (less than 67%)`);
       setIsRunning(false);
       setActiveTab("output");
+
+      if (roomInfo?.isPrivate) {
+        setShowPrivateActions(true);
+      }
     }, 2000);
   };
 
   return (
     <div className="h-12 border-b border-border/50 flex items-center justify-between px-4 shrink-0">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30">
+      <div className="flex items-center gap-2">
         <FileCode className="w-4 h-4 text-yellow-500" />
-        <span className="text-sm font-medium">JavaScript</span>
+        {languageOptions.map((option) => (
+          <Button
+            key={option.value}
+            variant={language === option.value ? "default" : "outline"}
+            size="sm"
+            onClick={() => setLanguage(option.value)}
+            className="h-8"
+          >
+            {option.label}
+          </Button>
+        ))}
       </div>
 
       <div className="flex items-center gap-2">

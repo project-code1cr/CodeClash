@@ -6,7 +6,7 @@ import { useBattleArenaStore } from "@/store/useBattleArenaStore";
 
 export default function EditorPanel() {
   const editorRef = useRef<any>(null);
-  const { code, setCode } = useBattleArenaStore();
+  const { code, setCode, language } = useBattleArenaStore();
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -17,7 +17,7 @@ export default function EditorPanel() {
       <div className="flex-1">
         <Editor
           height="100%"
-          language="javascript"
+          language={language}
           theme="vs-dark"
           value={code}
           onChange={(value) => setCode(value || "")}

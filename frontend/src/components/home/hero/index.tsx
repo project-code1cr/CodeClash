@@ -29,6 +29,27 @@ export default function Hero() {
       router.push("/waiting/" + response.roomId);
     } catch (error) {
       toast.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreatePrivateMatch() {
+    try {
+      setLoading(true);
+      const response = await createRoom({ isPrivate: true });
+
+      if (response.error) {
+        toast.error("Failed to create private match");
+        return;
+      }
+
+      setLoading(false);
+      router.push("/waiting/" + response.roomId);
+    } catch (error) {
+      toast.error("Something went wrong");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -137,6 +158,15 @@ export default function Hero() {
               >
                 <GamepadDirectional className="h-4 w-4" />
               </motion.span>
+            </Button>
+            <Button
+              onClick={handleCreatePrivateMatch}
+              disabled={loading}
+              variant="outline"
+              size="lg"
+              className="group min-w-45 rounded-full border-[#2a447a] bg-[#0b1f4d] text-white hover:bg-[#10295f] hover:border-[#3a5da3]"
+            >
+              Private Match
             </Button>
           </motion.div>
         </div>

@@ -57,7 +57,13 @@ export const useWaitingRoomStore = create<WaitingRoomState>((set, get) => ({
   },
 
   canStart: () => {
-    const activeUsers = get().activeUsers();
+    const state = get();
+    const activeUsers = state.activeUsers();
+
+    if (state.roomInfo?.isPrivate) {
+      return state.isCreator && activeUsers.length >= 1;
+    }
+
     return activeUsers.length === 2;
   },
 

@@ -6,10 +6,12 @@ import { Check, Copy } from "lucide-react";
 
 export default function RoomCodeCard() {
   const { roomInfo, copied, setCopied, isCreator } = useWaitingRoomStore();
+  const roomCode = roomInfo?.roomCode?.trim();
+  const isPrivate = Boolean(roomInfo?.isPrivate);
 
   const copyRoomCode = async () => {
-    if (roomInfo?.roomCode) {
-      await navigator.clipboard.writeText(roomInfo.roomCode);
+    if (roomCode) {
+      await navigator.clipboard.writeText(roomCode);
       setCopied(true);
       toast.success("Copied!");
       setTimeout(() => setCopied(false), 2000);
@@ -25,13 +27,14 @@ export default function RoomCodeCard() {
 
         <div className="flex items-center justify-center gap-4">
           <span className="text-4xl font-mono font-bold tracking-[0.3em] text-foreground">
-            {roomInfo?.roomCode}
+            {roomCode || "......"}
           </span>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={copyRoomCode}
+            disabled={!roomCode}
             className="text-muted-foreground cursor-pointer hover:text-foreground"
           >
             {copied ? (
@@ -44,7 +47,11 @@ export default function RoomCodeCard() {
 
         {isCreator && (
           <p className="text-sm text-muted-foreground mt-4">
-            Share this code with your opponent
+            {isPrivate
+              ? "Private match: this room is only for your solo practice"
+              : roomCode
+              ? "Share this code with your opponent"
+              : "Preparing room code..."}
           </p>
         )}
       </div>

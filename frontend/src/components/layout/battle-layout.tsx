@@ -13,8 +13,15 @@ export default function BattleLayout({
   children: ReactNode;
   roomId: string;
 }>) {
-  const { roomInfo, setRoomInfo, setOpponentStatus, setTimeRemaining } =
-    useBattleArenaStore();
+  const {
+    roomInfo,
+    setRoomInfo,
+    updateRoomInfo,
+    setOpponentStatus,
+    setTimeRemaining,
+    setShowPrivateActions,
+    setOutput,
+  } = useBattleArenaStore();
   const router = useRouter();
   const roomAccessor = new RoomAccessor();
   const { getRoomInfo } = roomAccessor;
@@ -56,8 +63,33 @@ export default function BattleLayout({
       setOpponentStatus("submitted");
     });
 
+    socket.on("private_question_updated", (data) => {
+      updateRoomInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              problem: data.problem,
+              privateQuestionCount: data.privateQuestionCount,
+              privateCurrentQuestion: data.privateCurrentQuestion,
+              privateSolvedCount: data.privateSolvedCount,
+            }
+          : prev
+      );
+      setShowPrivateActions(false);
+      setOutput("");
+    });
+
+    socket.on("private_match_ended", (data) => {
+      toast.success(
+        `Private match ended. Solved ${data.solvedCount}/${data.totalQuestions}`
+      );
+      router.push("/");
+    });
+
     return () => {
       socket.off("opponent_submitted");
+      socket.off("private_question_updated");
+      socket.off("private_match_ended");
     };
   }, []);
 

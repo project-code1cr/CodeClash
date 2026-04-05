@@ -2,7 +2,11 @@ import { ROOM_STATUS } from "../lib/constants/enum";
 
 export interface IRoom {
   roomId?: string;
-  roomCode?:string;
+  roomCode?: string;
+  isPrivate?: boolean;
+  privateQuestionCount?: number;
+  privateCurrentQuestion?: number;
+  privateSolvedCount?: number;
   creatorId: string;
   joinedUser?: string;
   status?: ROOM_STATUS;

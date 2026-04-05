@@ -1,2 +1,2 @@
-export declare function generateRoomId(): (size?: number) => string;
+export declare const generateRoomId: () => string;
 //# sourceMappingURL=nanoid.d.ts.map

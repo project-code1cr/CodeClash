@@ -1,9 +1,15 @@
 import axios from "axios";
 
-export function getServerUrl() {
-  const SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const DEFAULT_BACKEND_URL = "http://localhost:3001";
 
-  return SERVER_URL;
+export function getServerUrl() {
+  const SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+
+  if (!SERVER_URL || SERVER_URL === "undefined") {
+    return DEFAULT_BACKEND_URL;
+  }
+
+  return SERVER_URL.replace(/\/+$/, "");
 }
 
 export async function bootupBackend() {

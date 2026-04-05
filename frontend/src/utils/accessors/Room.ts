@@ -1,18 +1,21 @@
 import { getSocket } from "@/lib/socket";
 import {
+  CreateRoomPayload,
   CreateRoomRes,
+  EndPrivateMatchRes,
   GetRoomInfoRes,
   JoinRoomRes,
+  NextPrivateQuestionRes,
   StartMatchRes,
 } from "../types/room";
 
 export class RoomAccessor {
-  public createRoom(): Promise<CreateRoomRes> {
+  public createRoom(payload: CreateRoomPayload = {}): Promise<CreateRoomRes> {
     return new Promise((res, rej) => {
       try {
         const socket = getSocket();
 
-        socket.emit("create_room", {}, (response: CreateRoomRes) => {
+        socket.emit("create_room", payload, (response: CreateRoomRes) => {
           if (response.creatorId) {
             localStorage.setItem("room_creator", response.creatorId);
           }
@@ -56,16 +59,67 @@ export class RoomAccessor {
     });
   }
 
-  public async startMatch(roomId: string): Promise<StartMatchRes> {
+  public async startMatch(
+    roomId: string,
+    options?: { questionCount?: number; durationMinutes?: number }
+  ): Promise<StartMatchRes> {
     return new Promise((res, rej) => {
       try {
         const socket = getSocket();
 
-        socket.emit("start_match", { roomId }, (response: StartMatchRes) => {
-          res(response);
-        });
+        socket.emit(
+          "start_match",
+          {
+            roomId,
+            questionCount: options?.questionCount,
+            durationMinutes: options?.durationMinutes,
+          },
+          (response: StartMatchRes) => {
+            res(response);
+          }
+        );
       } catch (error) {
         console.log("START MATCH ERROR:", error);
+        rej(error);
+      }
+    });
+  }
+
+  public async nextPrivateQuestion(
+    roomId: string
+  ): Promise<NextPrivateQuestionRes> {
+    return new Promise((res, rej) => {
+      try {
+        const socket = getSocket();
+
+        socket.emit(
+          "next_private_question",
+          { roomId },
+          (response: NextPrivateQuestionRes) => {
+            res(response);
+          }
+        );
+      } catch (error) {
+        console.log("NEXT PRIVATE QUESTION ERROR:", error);
+        rej(error);
+      }
+    });
+  }
+
+  public async endPrivateMatch(roomId: string): Promise<EndPrivateMatchRes> {
+    return new Promise((res, rej) => {
+      try {
+        const socket = getSocket();
+
+        socket.emit(
+          "end_private_match",
+          { roomId },
+          (response: EndPrivateMatchRes) => {
+            res(response);
+          }
+        );
+      } catch (error) {
+        console.log("END PRIVATE MATCH ERROR:", error);
         rej(error);
       }
     });

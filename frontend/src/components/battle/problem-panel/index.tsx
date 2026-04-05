@@ -2,10 +2,75 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useBattleArenaStore } from "@/store/useBattleArenaStore";
 import { ChevronRight, FileCode, Terminal, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RoomAccessor } from "@/utils/accessors";
+import toast from "react-hot-toast";
 
 export default function ProblemPanel() {
-  const { setActiveTab, activeTab, roomInfo, isRunning, output } =
-    useBattleArenaStore();
+  const {
+    setActiveTab,
+    activeTab,
+    roomInfo,
+    isRunning,
+    output,
+    showPrivateActions,
+    setShowPrivateActions,
+    updateRoomInfo,
+    setOutput,
+  } = useBattleArenaStore();
+  const roomAccessor = new RoomAccessor();
+  const { nextPrivateQuestion, endPrivateMatch } = roomAccessor;
+
+  const hasNextPrivateQuestion =
+    (roomInfo?.privateCurrentQuestion || 1) < (roomInfo?.privateQuestionCount || 1);
+
+  const onNextQuestion = async () => {
+    if (!roomInfo?.roomId) return;
+
+    const response = await nextPrivateQuestion(roomInfo.roomId);
+    if (response.error) {
+      toast.error(response.error);
+      return;
+    }
+
+    if (response.done) {
+      toast.success("You completed all selected questions.");
+      setShowPrivateActions(false);
+      return;
+    }
+
+    updateRoomInfo((prev) =>
+      prev
+        ? {
+            ...prev,
+            problem: response.problem,
+            privateQuestionCount: response.privateQuestionCount,
+            privateCurrentQuestion: response.privateCurrentQuestion,
+            privateSolvedCount: response.privateSolvedCount,
+          }
+        : prev
+    );
+    setOutput("");
+    setActiveTab("problem");
+    setShowPrivateActions(false);
+    toast.success(`Moved to question ${response.privateCurrentQuestion}`);
+  };
+
+  const onEndMatch = async () => {
+    if (!roomInfo?.roomId) return;
+
+    const response = await endPrivateMatch(roomInfo.roomId);
+    if (response.error) {
+      toast.error(response.error);
+      return;
+    }
+
+    toast.success(
+      `Session ended: solved ${response.solvedCount}/${response.totalQuestions}`
+    );
+    setShowPrivateActions(false);
+  };
+
   return (
     <div className="w-[45%] border-r border-border/50 flex flex-col overflow-hidden">
       {/* Tabs */}
@@ -138,9 +203,28 @@ export default function ProblemPanel() {
                     <span className="text-muted-foreground">Running...</span>
                   </div>
                 ) : output ? (
-                  <pre className="whitespace-pre-wrap text-muted-foreground">
-                    {output}
-                  </pre>
+                  <div className="space-y-4">
+                    <pre className="whitespace-pre-wrap text-muted-foreground">
+                      {output}
+                    </pre>
+
+                    {roomInfo?.isPrivate && showPrivateActions && (
+                      <div className="flex items-center gap-2">
+                        {hasNextPrivateQuestion && (
+                          <Button size="sm" onClick={onNextQuestion}>
+                            Next Question
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={onEndMatch}
+                        >
+                          End Match
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-muted-foreground/50">
                     Run your code to see output here

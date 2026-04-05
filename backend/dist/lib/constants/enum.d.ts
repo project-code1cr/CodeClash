@@ -3,8 +3,8 @@ export declare enum ROOM_STATUS {
     ACTIVE = "active",
     FINISHED = "finished"
 }
-export declare enum ROOM_ID {
-    ALPHABET = "ABCDEFGHIJKLMNPQRSTUVWXYZ23456789",
-    SIZE = 6
-}
+export declare const ROOM_ID: {
+    ALPHABET: string;
+    SIZE: number;
+};
 //# sourceMappingURL=enum.d.ts.map

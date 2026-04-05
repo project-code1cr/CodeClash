@@ -10,6 +10,22 @@ const RoomSchema = new mongoose_1.Schema({
         type: String,
         maxLength: 6,
     },
+    isPrivate: {
+        type: Boolean,
+        default: false,
+    },
+    privateQuestionCount: {
+        type: Number,
+        default: 1,
+    },
+    privateCurrentQuestion: {
+        type: Number,
+        default: 1,
+    },
+    privateSolvedCount: {
+        type: Number,
+        default: 0,
+    },
     creatorId: {
         type: String,
         required: true,

@@ -42,6 +42,42 @@ declare const RoomModel: import("mongoose").Model<IRoom, {}, {}, {
     }, "id"> & {
         id: string;
     }> | undefined;
+    isPrivate?: import("mongoose").SchemaDefinitionProperty<boolean | undefined, IRoom, import("mongoose").Document<unknown, {}, IRoom, {
+        id: string;
+    }, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & Omit<IRoom & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }> | undefined;
+    privateQuestionCount?: import("mongoose").SchemaDefinitionProperty<number | undefined, IRoom, import("mongoose").Document<unknown, {}, IRoom, {
+        id: string;
+    }, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & Omit<IRoom & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }> | undefined;
+    privateCurrentQuestion?: import("mongoose").SchemaDefinitionProperty<number | undefined, IRoom, import("mongoose").Document<unknown, {}, IRoom, {
+        id: string;
+    }, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & Omit<IRoom & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }> | undefined;
+    privateSolvedCount?: import("mongoose").SchemaDefinitionProperty<number | undefined, IRoom, import("mongoose").Document<unknown, {}, IRoom, {
+        id: string;
+    }, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & Omit<IRoom & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & {
+        id: string;
+    }> | undefined;
     creatorId?: import("mongoose").SchemaDefinitionProperty<string, IRoom, import("mongoose").Document<unknown, {}, IRoom, {
         id: string;
     }, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & Omit<IRoom & {

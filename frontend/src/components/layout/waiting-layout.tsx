@@ -14,7 +14,7 @@ export default function WaitingLayout({
   children: ReactNode;
   roomId: string;
 }>) {
-  const { setRoomInfo, addUser, setIsCreator, setCountdown } =
+  const { setRoomInfo, updateRoomInfo, addUser, setIsCreator, setCountdown } =
     useWaitingRoomStore();
   const roomAccessor = new RoomAccessor();
   const { getRoomInfo } = roomAccessor;
@@ -46,6 +46,19 @@ export default function WaitingLayout({
 
     socket.on("match_started", (data: MatchStartedRes) => {
       const { startTime } = data;
+      updateRoomInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              problem: data.problem,
+              isPrivate: data.isPrivate,
+              privateQuestionCount: data.privateQuestionCount,
+              privateCurrentQuestion: data.privateCurrentQuestion,
+              privateSolvedCount: data.privateSolvedCount,
+            }
+          : prev
+      );
+
       const interval = setInterval(() => {
         const remaining = Math.ceil((startTime - Date.now()) / 1000);
 

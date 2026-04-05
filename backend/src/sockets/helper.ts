@@ -9,6 +9,10 @@ export function findWinner(room: IRoom):string {
   const creatorTime = room.submissions?.creator?.submissionTime;
   const joinerTime = room.submissions?.joiner?.submissionTime;
 
+  if (room.isPrivate) {
+    return isCreatorSubmitted ? room.creatorId : "draw";
+  }
+
 
   if (isCreatorSubmitted && !isJoinerSubmitted) {
     return room.creatorId;

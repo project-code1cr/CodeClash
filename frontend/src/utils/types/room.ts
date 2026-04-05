@@ -3,12 +3,23 @@ import { ROOM_STATUS } from "../constants";
 export interface CreateRoomRes {
   roomId?: string;
   creatorId?: string;
+  roomCode?: string;
+  isPrivate?: boolean;
   error?: string;
 }
 
+export interface CreateRoomPayload {
+  isPrivate?: boolean;
+}
+
 export interface GetRoomInfoRes {
+  roomId?: string;
   users?: string[];
   roomCode?: string;
+  isPrivate?: boolean;
+  privateQuestionCount?: number;
+  privateCurrentQuestion?: number;
+  privateSolvedCount?: number;
   status?: ROOM_STATUS;
   creatorId?: string;
   problem?: any;
@@ -25,6 +36,7 @@ export interface GetRoomInfoRes {
 export interface JoinRoomRes {
   roomId: string;
   users: string[];
+  isPrivate?: boolean;
   status: ROOM_STATUS;
   creatorId: string;
   problem: any;
@@ -43,8 +55,30 @@ export interface StartMatchRes {
   success?: boolean;
 }
 
+export interface NextPrivateQuestionRes {
+  success?: boolean;
+  done?: boolean;
+  roomId?: string;
+  problem?: any;
+  privateQuestionCount?: number;
+  privateCurrentQuestion?: number;
+  privateSolvedCount?: number;
+  error?: string;
+}
+
+export interface EndPrivateMatchRes {
+  success?: boolean;
+  solvedCount?: number;
+  totalQuestions?: number;
+  error?: string;
+}
+
 export interface MatchStartedRes {
   problem: any;
+  isPrivate?: boolean;
+  privateQuestionCount?: number;
+  privateCurrentQuestion?: number;
+  privateSolvedCount?: number;
   startTime: number;
   duration: number;
   endTime: number;
