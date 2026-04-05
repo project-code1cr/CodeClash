@@ -44,10 +44,24 @@ export function setupRoomSockets(io: Server) {
     // Get room info
     socket.on("get_room_info", async ({ roomId }, callback: any) => {
       try {
-        const room = await RoomModel.findById(roomId);
+        let room = await RoomModel.findById(roomId);
 
         if (!room) {
           return callback({ error: "Room not found" });
+        }
+
+        // Safety net: if server timeout event was missed, finalize on demand.
+        if (
+          room.status === ROOM_STATUS.ACTIVE &&
+          room.startTime &&
+          Date.now() >= room.startTime + room.duration * 1000
+        ) {
+          await checkMatchEnd(io, roomId);
+          room = await RoomModel.findById(roomId);
+
+          if (!room) {
+            return callback({ error: "Room not found" });
+          }
         }
 
         // Backfill missing room codes for older/incomplete room documents.
@@ -205,9 +219,12 @@ export function setupRoomSockets(io: Server) {
         callback({ success: true });
         console.log(`Match started in room ${roomId}`);
 
+        const endAt = room.startTime + room.duration * 1000;
+        const timeoutDelay = Math.max(0, endAt - Date.now());
+
         setTimeout(() => {
           checkMatchEnd(io, roomId);
-        }, room.duration * 1000);
+        }, timeoutDelay);
       } catch (error) {
         console.error("Start match error:", error);
         callback({ error: "Failed to start match" });

@@ -64,7 +64,7 @@ export const useWaitingRoomStore = create<WaitingRoomState>((set, get) => ({
       return state.isCreator && activeUsers.length >= 1;
     }
 
-    return activeUsers.length === 2;
+    return state.isCreator && activeUsers.length === 2;
   },
 
   // Actions

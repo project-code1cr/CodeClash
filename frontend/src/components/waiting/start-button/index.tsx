@@ -17,6 +17,8 @@ export default function StartButton({ roomId }: { roomId: string }) {
   const [starting, setStarting] = useState(false);
 
   const handleStartMatch = async () => {
+    if (starting || !isCreator || !status) return;
+
     try {
       setStarting(true);
       const safeDurationMinutes = Number.isFinite(durationMinutes)

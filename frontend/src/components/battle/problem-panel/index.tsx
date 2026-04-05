@@ -20,6 +20,7 @@ export default function ProblemPanel() {
   } = useBattleArenaStore();
   const roomAccessor = new RoomAccessor();
   const { nextPrivateQuestion, endPrivateMatch } = roomAccessor;
+  const problem = roomInfo?.problem;
 
   const hasNextPrivateQuestion =
     (roomInfo?.privateCurrentQuestion || 1) < (roomInfo?.privateQuestionCount || 1);
@@ -117,20 +118,20 @@ export default function ProblemPanel() {
               {/* Title */}
               <div>
                 <h1 className="text-xl font-semibold">
-                  {roomInfo?.problem.title}
+                  {problem?.title || "Problem unavailable"}
                 </h1>
               </div>
 
               {/* Description */}
               <div className="prose prose-invert prose-sm max-w-none">
                 <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                  {roomInfo?.problem.description}
+                  {problem?.description || "This match has ended or the problem is no longer available."}
                 </p>
               </div>
 
               {/* Examples */}
               <div className="space-y-4">
-                {roomInfo?.problem.examples.map((example: any, idx: number) => (
+                {(problem?.examples || []).map((example: any, idx: number) => (
                   <div
                     key={idx}
                     className="rounded-lg bg-secondary/30 border border-border/30 overflow-hidden"
@@ -165,7 +166,7 @@ export default function ProblemPanel() {
               <div>
                 <h3 className="text-sm font-medium mb-3">Constraints</h3>
                 <ul className="space-y-1">
-                  {roomInfo?.problem.constraints.map(
+                  {(problem?.constraints || []).map(
                     (constraint: any, idx: number) => (
                       <li
                         key={idx}

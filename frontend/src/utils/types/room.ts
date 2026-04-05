@@ -84,6 +84,19 @@ export interface MatchEndedRes {
   endedBy?: string;
   reason?: string;
   endTime?: number;
+  isPrivate?: boolean;
+  solvedCount?: number;
+  totalQuestions?: number;
+  submissions?: {
+    creator?: {
+      submitted?: boolean;
+      submissionTime?: number;
+    };
+    joiner?: {
+      submitted?: boolean;
+      submissionTime?: number;
+    };
+  };
 }
 
 export interface MatchStartedRes {

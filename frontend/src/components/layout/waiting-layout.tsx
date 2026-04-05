@@ -21,6 +21,31 @@ export default function WaitingLayout({
   const router = useRouter();
 
   useEffect(() => {
+    // Clear any stale overlay value from a previous waiting-room session.
+    setCountdown(null);
+  }, [setCountdown]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    const startCountdownToBattle = (startTime: number) => {
+      const updateCountdown = () => {
+        const remaining = Math.ceil((startTime - Date.now()) / 1000);
+        setCountdown(Math.max(0, remaining));
+      };
+
+      updateCountdown();
+      interval = setInterval(updateCountdown, 200);
+
+      const delay = Math.max(0, startTime - Date.now());
+      timeout = setTimeout(() => {
+        if (interval) clearInterval(interval);
+        setCountdown(null);
+        router.push("/battle/" + roomId);
+      }, delay);
+    };
+
     async function getRoomData() {
       const response = await getRoomInfo(roomId);
 
@@ -30,15 +55,43 @@ export default function WaitingLayout({
       }
       setRoomInfo(response);
 
+      if (response.status === "active" && response.startTime) {
+        startCountdownToBattle(response.startTime);
+      }
+
       const creatorId = localStorage.getItem("room_creator");
       if (creatorId === response.creatorId) setIsCreator(true);
     }
 
     getRoomData();
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
+    };
   }, [roomId]);
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
     const socket = getSocket();
+
+    const startCountdownToBattle = (startTime: number) => {
+      const updateCountdown = () => {
+        const remaining = Math.ceil((startTime - Date.now()) / 1000);
+        setCountdown(Math.max(0, remaining));
+      };
+
+      updateCountdown();
+      interval = setInterval(updateCountdown, 200);
+
+      const delay = Math.max(0, startTime - Date.now());
+      timeout = setTimeout(() => {
+        if (interval) clearInterval(interval);
+        setCountdown(null);
+        router.push("/battle/" + roomId);
+      }, delay);
+    };
 
     socket.on("user_joined", (userId: string) => {
       addUser(userId);
@@ -59,23 +112,18 @@ export default function WaitingLayout({
           : prev
       );
 
-      const interval = setInterval(() => {
-        const remaining = Math.ceil((startTime - Date.now()) / 1000);
-
-        if (remaining <= 0) {
-          clearInterval(interval);
-          router.push("/battle/" + roomId);
-        } else {
-          setCountdown(remaining);
-        }
-      }, 200);
+      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
+      startCountdownToBattle(startTime);
     });
 
     return () => {
       socket.off("user_joined");
       socket.off("match_started");
+      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
     };
-  }, []);
+  }, [addUser, roomId, router, setCountdown, updateRoomInfo]);
 
   return <>{children}</>;
 }

@@ -43,8 +43,14 @@ export async function checkMatchEnd(io: Server, roomId: string) {
     room.winner = findWinner(room);
     await room.save();
 
-    io.to(roomId).emit("match_ended", {
+    const targetRoom = room.roomCode || roomId;
+
+    io.to(targetRoom).emit("match_ended", {
       winner: room.winner,
+      reason: timeUp ? "timeout" : "submissions_completed",
+      isPrivate: room.isPrivate,
+      solvedCount: room.privateSolvedCount || 0,
+      totalQuestions: room.privateQuestionCount || 1,
       submissions: {
         creator: {
           submitted: isCreatorSubmitted,
