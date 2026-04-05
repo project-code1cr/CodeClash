@@ -3,6 +3,7 @@ import {
   CreateRoomPayload,
   CreateRoomRes,
   EndPrivateMatchRes,
+  ForfeitMatchRes,
   GetRoomInfoRes,
   JoinRoomRes,
   NextPrivateQuestionRes,
@@ -120,6 +121,21 @@ export class RoomAccessor {
         );
       } catch (error) {
         console.log("END PRIVATE MATCH ERROR:", error);
+        rej(error);
+      }
+    });
+  }
+
+  public async forfeitMatch(roomId: string): Promise<ForfeitMatchRes> {
+    return new Promise((res, rej) => {
+      try {
+        const socket = getSocket();
+
+        socket.emit("forfeit_match", { roomId }, (response: ForfeitMatchRes) => {
+          res(response);
+        });
+      } catch (error) {
+        console.log("FORFEIT MATCH ERROR:", error);
         rej(error);
       }
     });

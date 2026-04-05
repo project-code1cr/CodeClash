@@ -1,15 +1,44 @@
 "use client";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBattleArenaStore } from "@/store/useBattleArenaStore";
 import { RoomAccessor } from "@/utils/accessors";
 import { CheckCircle2, Clock, User } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function RoomHeader() {
   const { timeRemaining, roomInfo, opponentStatus } = useBattleArenaStore();
   const roomAccessor = new RoomAccessor();
-  const { getTimerColor, formatTime } = roomAccessor;
+  const { getTimerColor, formatTime, forfeitMatch } = roomAccessor;
+  const router = useRouter();
+  const [ending, setEnding] = useState(false);
+
+  const onEndMatch = async () => {
+    if (!roomInfo?.roomId || ending) return;
+
+    const shouldEnd = window.confirm(
+      "End this match now? This will forfeit your current match."
+    );
+    if (!shouldEnd) return;
+
+    try {
+      setEnding(true);
+      const response = await forfeitMatch(roomInfo.roomId);
+      if (response.error) {
+        toast.error(response.error);
+        return;
+      }
+
+      toast.success("Match ended.");
+      router.push("/");
+    } finally {
+      setEnding(false);
+    }
+  };
 
   return (
     <header className="h-14 border-b border-border/50 bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
@@ -47,6 +76,15 @@ export default function RoomHeader() {
 
       {/* Opponent status */}
       <div className="flex items-center gap-3">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onEndMatch}
+          disabled={ending}
+          className="border-red-400/40 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+        >
+          End Match
+        </Button>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30">
           <User className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Opponent</span>

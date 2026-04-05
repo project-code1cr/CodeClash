@@ -73,6 +73,19 @@ export interface EndPrivateMatchRes {
   error?: string;
 }
 
+export interface ForfeitMatchRes {
+  success?: boolean;
+  winner?: string;
+  error?: string;
+}
+
+export interface MatchEndedRes {
+  winner?: string;
+  endedBy?: string;
+  reason?: string;
+  endTime?: number;
+}
+
 export interface MatchStartedRes {
   problem: any;
   isPrivate?: boolean;

@@ -286,6 +286,53 @@ export function setupRoomSockets(io: Server) {
       }
     });
 
+    // End active match early (forfeit)
+    socket.on("forfeit_match", async ({ roomId }, callback: any) => {
+      try {
+        const room = await RoomModel.findById(roomId);
+
+        if (!room) return callback({ error: "Room not found" });
+        if (room.status !== ROOM_STATUS.ACTIVE)
+          return callback({ error: "Match is not active" });
+
+        const isCreator = socket.id === room.creatorId;
+        const isJoiner = socket.id === room.joinedUser;
+
+        if (!isCreator && !isJoiner) {
+          return callback({ error: "You are not in this room" });
+        }
+
+        room.status = ROOM_STATUS.FINISHED;
+        room.endTime = Date.now();
+
+        if (room.isPrivate) {
+          room.winner = room.privateSolvedCount ? room.creatorId : "draw";
+        } else {
+          if (isCreator && room.joinedUser) {
+            room.winner = room.joinedUser;
+          } else if (isJoiner) {
+            room.winner = room.creatorId;
+          } else {
+            room.winner = "draw";
+          }
+        }
+
+        await room.save();
+
+        io.to(room.roomCode!).emit("match_ended", {
+          winner: room.winner,
+          endedBy: socket.id,
+          reason: "forfeit",
+          endTime: room.endTime,
+        });
+
+        callback({ success: true, winner: room.winner });
+      } catch (error) {
+        console.error("Forfeit match error:", error);
+        callback({ error: "Failed to end match" });
+      }
+    });
+
     // Submit Code
     socket.on("submit_code", async ({ roomId, code }, callback: any) => {
       try {

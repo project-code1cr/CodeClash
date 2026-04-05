@@ -2,6 +2,7 @@
 import { getSocket } from "@/lib/socket";
 import { useBattleArenaStore } from "@/store/useBattleArenaStore";
 import { RoomAccessor } from "@/utils/accessors";
+import { MatchEndedRes } from "@/utils/types/room";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 import toast from "react-hot-toast";
@@ -86,10 +87,20 @@ export default function BattleLayout({
       router.push("/");
     });
 
+    socket.on("match_ended", (data: MatchEndedRes) => {
+      if (data.reason === "forfeit") {
+        toast("Match ended by player.");
+      } else {
+        toast.success("Match ended.");
+      }
+      router.push("/");
+    });
+
     return () => {
       socket.off("opponent_submitted");
       socket.off("private_question_updated");
       socket.off("private_match_ended");
+      socket.off("match_ended");
     };
   }, []);
 
