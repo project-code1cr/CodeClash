@@ -56,7 +56,7 @@ export default function Navbar() {
                 key={item}
                 href={
                   item === "Open Source"
-                    ? "https://github.com/YM-Solutions-Official/CodeClash"
+                    ? "https://github.com/project-code1cr/CodeClash"
                     : `#${item.toLowerCase().replace(/ /g, "-")}`
                 }
                 target={item === "Open Source" ? "_blank" : undefined}
