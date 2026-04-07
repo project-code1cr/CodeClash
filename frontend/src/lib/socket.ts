@@ -4,6 +4,12 @@ import { io, Socket } from "socket.io-client";
 let socket: Socket;
 let diagnosticsAttached = false;
 
+type SocketConnectError = Error & {
+  description?: unknown;
+  context?: unknown;
+  type?: string;
+};
+
 export const getSocket = () => {
   if (!socket) {
     const SERVER_URL = getServerUrl();
@@ -28,7 +34,7 @@ export const getSocket = () => {
         });
       });
 
-      socket.on("connect_error", (error) => {
+      socket.on("connect_error", (error: SocketConnectError) => {
         console.error("[socket] connect_error", {
           message: error.message,
           description: error.description,
