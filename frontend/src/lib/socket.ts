@@ -2,6 +2,7 @@ import { getServerUrl } from "@/utils";
 import { io, Socket } from "socket.io-client";
 
 let socket: Socket;
+let diagnosticsAttached = false;
 
 export const getSocket = () => {
   if (!socket) {
@@ -15,6 +16,32 @@ export const getSocket = () => {
     socket = io(SERVER_URL, {
       transports: ["websocket", "polling"],
     });
+
+    if (!diagnosticsAttached) {
+      diagnosticsAttached = true;
+
+      socket.on("connect", () => {
+        console.info("[socket] connected", {
+          id: socket.id,
+          url: SERVER_URL,
+          transport: socket.io.engine.transport.name,
+        });
+      });
+
+      socket.on("connect_error", (error) => {
+        console.error("[socket] connect_error", {
+          message: error.message,
+          description: error.description,
+          context: error.context,
+          type: error.type,
+          url: SERVER_URL,
+        });
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.warn("[socket] disconnected", { reason });
+      });
+    }
   }
 
   return socket;
