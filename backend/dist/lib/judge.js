@@ -9,6 +9,10 @@ const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
 const child_process_1 = require("child_process");
 const PISTON_URL = process.env.PISTON_URL?.trim();
+const PISTON_COMPILE_TIMEOUT_MS = Number(process.env.PISTON_COMPILE_TIMEOUT_MS || 20000);
+const PISTON_RUN_TIMEOUT_MS = Number(process.env.PISTON_RUN_TIMEOUT_MS || 8000);
+const LOCAL_CPP_COMPILE_TIMEOUT_MS = Number(process.env.LOCAL_CPP_COMPILE_TIMEOUT_MS || 25000);
+const LOCAL_RUN_TIMEOUT_MS = Number(process.env.LOCAL_RUN_TIMEOUT_MS || 8000);
 const LANGUAGE_RUNTIME = {
     javascript: {
         language: "javascript",
@@ -245,8 +249,8 @@ const executeOnPiston = async (lang, sourceCode) => {
             language: runtime.language,
             version: runtime.version,
             files: [{ content: sourceCode }],
-            compile_timeout: 10000,
-            run_timeout: 4000,
+            compile_timeout: PISTON_COMPILE_TIMEOUT_MS,
+            run_timeout: PISTON_RUN_TIMEOUT_MS,
         }),
     });
     if (!response.ok) {
@@ -272,7 +276,9 @@ const executeLocally = async (lang, sourceCode) => {
         if (lang === "javascript") {
             const filePath = path_1.default.join(tempDir, "Main.js");
             fs_1.default.writeFileSync(filePath, sourceCode, "utf8");
-            const run = await runCommand("node", [filePath], { timeoutMs: 4000 });
+            const run = await runCommand("node", [filePath], {
+                timeoutMs: LOCAL_RUN_TIMEOUT_MS,
+            });
             return {
                 stdout: run.stdout,
                 stderr: run.stderr,
@@ -286,7 +292,7 @@ const executeLocally = async (lang, sourceCode) => {
                 ? path_1.default.join(tempDir, "main.exe")
                 : path_1.default.join(tempDir, "main");
             fs_1.default.writeFileSync(srcPath, sourceCode, "utf8");
-            const compile = await runCommand("g++", [srcPath, "-std=c++17", "-O2", "-o", binPath], { timeoutMs: 12000 });
+            const compile = await runCommand("g++", [srcPath, "-std=c++17", "-O2", "-o", binPath], { timeoutMs: LOCAL_CPP_COMPILE_TIMEOUT_MS });
             if (compile.code !== 0) {
                 return {
                     stdout: "",
@@ -295,7 +301,7 @@ const executeLocally = async (lang, sourceCode) => {
                     code: compile.code,
                 };
             }
-            const run = await runCommand(binPath, [], { timeoutMs: 4000 });
+            const run = await runCommand(binPath, [], { timeoutMs: LOCAL_RUN_TIMEOUT_MS });
             return {
                 stdout: run.stdout,
                 stderr: run.stderr,
@@ -353,9 +359,13 @@ const judgeSubmission = async (problem, code, language) => {
         try {
             const result = await executeProgram(language, sourceCode);
             if (result.compileOutput.trim()) {
+                const compileText = result.compileOutput.trim();
+                const compileVerdict = /time limit|timed out|timeout/i.test(compileText)
+                    ? "TLE"
+                    : "COMPILATION_ERROR";
                 return {
-                    verdict: "COMPILATION_ERROR",
-                    details: result.compileOutput.trim(),
+                    verdict: compileVerdict,
+                    details: compileText,
                     failedCase: idx + 1,
                 };
             }
