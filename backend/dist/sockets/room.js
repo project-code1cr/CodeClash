@@ -6,11 +6,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupRoomSockets = setupRoomSockets;
 const room_1 = __importDefault(require("../models/room"));
 const constants_1 = require("../lib/constants");
+const judge_1 = require("../lib/judge");
 const helper_1 = require("./helper");
 const nanoid_1 = require("../lib/nanoid");
 function setupRoomSockets(io) {
     io.on("connection", (socket) => {
         console.log("New client connected", socket.id);
+        const reconcilePrivateCreator = async (room) => {
+            if (!room?.isPrivate)
+                return room;
+            if (room.joinedUser)
+                return room;
+            if (room.creatorId === socket.id)
+                return room;
+            // Private solo matches can survive reconnects by rebinding creator socket.
+            room.creatorId = socket.id;
+            await room.save();
+            return room;
+        };
         // Create Room
         socket.on("create_room", async ({ isPrivate } = {}, callback) => {
             try {
@@ -39,14 +52,28 @@ function setupRoomSockets(io) {
         // Get room info
         socket.on("get_room_info", async ({ roomId }, callback) => {
             try {
-                const room = await room_1.default.findById(roomId);
+                let room = await room_1.default.findById(roomId);
                 if (!room) {
                     return callback({ error: "Room not found" });
+                }
+                // Safety net: if server timeout event was missed, finalize on demand.
+                if (room.status === constants_1.ROOM_STATUS.ACTIVE &&
+                    room.startTime &&
+                    Date.now() >= room.startTime + room.duration * 1000) {
+                    await (0, helper_1.checkMatchEnd)(io, roomId);
+                    room = await room_1.default.findById(roomId);
+                    if (!room) {
+                        return callback({ error: "Room not found" });
+                    }
                 }
                 // Backfill missing room codes for older/incomplete room documents.
                 if (!room.roomCode) {
                     room.roomCode = (0, nanoid_1.generateRoomId)();
                     await room.save();
+                }
+                room = await reconcilePrivateCreator(room);
+                if (!room) {
+                    return callback({ error: "Room not found" });
                 }
                 const users = room.joinedUser
                     ? [room.creatorId, room.joinedUser]
@@ -148,11 +175,15 @@ function setupRoomSockets(io) {
                 const safeDurationMinutes = Number.isFinite(parsedDurationMinutes)
                     ? Math.min(120, Math.max(1, Math.floor(parsedDurationMinutes)))
                     : 15;
+                const initialProblem = isPrivate
+                    ? (0, constants_1.getRandomPracticeProblem)()
+                    : constants_1.HARDCODED_PROBLEM;
                 room.status = constants_1.ROOM_STATUS.ACTIVE;
-                room.problem = isPrivate ? (0, constants_1.getRandomPracticeProblem)() : constants_1.HARDCODED_PROBLEM;
+                room.problem = initialProblem;
                 room.privateQuestionCount = isPrivate ? safeQuestionCount : 1;
                 room.privateCurrentQuestion = 1;
                 room.privateSolvedCount = 0;
+                room.privateProblemHistory = isPrivate ? [initialProblem.title] : [];
                 if (isPrivate) {
                     room.duration = safeDurationMinutes * 60;
                 }
@@ -175,9 +206,11 @@ function setupRoomSockets(io) {
                 io.to(room.roomCode).emit("match_started", matchData);
                 callback({ success: true });
                 console.log(`Match started in room ${roomId}`);
+                const endAt = room.startTime + room.duration * 1000;
+                const timeoutDelay = Math.max(0, endAt - Date.now());
                 setTimeout(() => {
                     (0, helper_1.checkMatchEnd)(io, roomId);
-                }, room.duration * 1000);
+                }, timeoutDelay);
             }
             catch (error) {
                 console.error("Start match error:", error);
@@ -187,9 +220,13 @@ function setupRoomSockets(io) {
         // Private: move to next question
         socket.on("next_private_question", async ({ roomId }, callback) => {
             try {
-                const room = await room_1.default.findById(roomId);
+                let room = await room_1.default.findById(roomId);
                 if (!room)
                     return callback({ error: "Room not found" });
+                room = await reconcilePrivateCreator(room);
+                if (!room) {
+                    return callback({ error: "Room not found" });
+                }
                 if (!room.isPrivate)
                     return callback({ error: "Not a private match" });
                 if (room.creatorId !== socket.id)
@@ -199,8 +236,11 @@ function setupRoomSockets(io) {
                 if ((room.privateCurrentQuestion || 1) >= (room.privateQuestionCount || 1)) {
                     return callback({ done: true });
                 }
+                const usedTitles = room.privateProblemHistory || [];
+                const nextProblem = (0, constants_1.getNextPracticeProblem)(usedTitles);
                 room.privateCurrentQuestion = (room.privateCurrentQuestion || 1) + 1;
-                room.problem = (0, constants_1.getRandomPracticeProblem)();
+                room.problem = nextProblem;
+                room.privateProblemHistory = [...usedTitles, nextProblem.title];
                 room.submissions = {
                     creator: { submitted: false },
                     joiner: { submitted: false },
@@ -224,9 +264,13 @@ function setupRoomSockets(io) {
         // Private: end match early
         socket.on("end_private_match", async ({ roomId }, callback) => {
             try {
-                const room = await room_1.default.findById(roomId);
+                let room = await room_1.default.findById(roomId);
                 if (!room)
                     return callback({ error: "Room not found" });
+                room = await reconcilePrivateCreator(room);
+                if (!room) {
+                    return callback({ error: "Room not found" });
+                }
                 if (!room.isPrivate)
                     return callback({ error: "Not a private match" });
                 if (room.creatorId !== socket.id)
@@ -254,9 +298,13 @@ function setupRoomSockets(io) {
         // End active match early (forfeit)
         socket.on("forfeit_match", async ({ roomId }, callback) => {
             try {
-                const room = await room_1.default.findById(roomId);
+                let room = await room_1.default.findById(roomId);
                 if (!room)
                     return callback({ error: "Room not found" });
+                room = await reconcilePrivateCreator(room);
+                if (!room) {
+                    return callback({ error: "Room not found" });
+                }
                 if (room.status !== constants_1.ROOM_STATUS.ACTIVE)
                     return callback({ error: "Match is not active" });
                 const isCreator = socket.id === room.creatorId;
@@ -295,11 +343,46 @@ function setupRoomSockets(io) {
             }
         });
         // Submit Code
-        socket.on("submit_code", async ({ roomId, code }, callback) => {
+        socket.on("run_code", async ({ roomId, code, language }, callback) => {
             try {
-                const room = await room_1.default.findById(roomId);
+                let room = await room_1.default.findById(roomId);
                 if (!room)
                     return callback({ error: "Room not found" });
+                room = await reconcilePrivateCreator(room);
+                if (!room) {
+                    return callback({ error: "Room not found" });
+                }
+                if (room.status !== constants_1.ROOM_STATUS.ACTIVE) {
+                    return callback({ error: "Match is not active" });
+                }
+                const isCreator = socket.id === room.creatorId;
+                const isJoiner = socket.id === room.joinedUser;
+                if (!isCreator && !isJoiner) {
+                    return callback({ error: "You are not in this room" });
+                }
+                const safeLanguage = language === "cpp" || language === "java" ? language : "javascript";
+                const judgeResult = await (0, judge_1.judgeSubmission)(room.problem, code, safeLanguage);
+                callback({
+                    success: judgeResult.verdict === "ACCEPTED",
+                    verdict: judgeResult.verdict,
+                    details: judgeResult.details,
+                    failedCase: judgeResult.failedCase,
+                });
+            }
+            catch (error) {
+                console.error("Run code error:", error);
+                callback({ error: "Failed to run code" });
+            }
+        });
+        socket.on("submit_code", async ({ roomId, code, language }, callback) => {
+            try {
+                let room = await room_1.default.findById(roomId);
+                if (!room)
+                    return callback({ error: "Room not found" });
+                room = await reconcilePrivateCreator(room);
+                if (!room) {
+                    return callback({ error: "Room not found" });
+                }
                 if (room.status !== constants_1.ROOM_STATUS.ACTIVE) {
                     return callback({ error: "Match is not active" });
                 }
@@ -314,6 +397,16 @@ function setupRoomSockets(io) {
                     : room.submissions?.joiner?.submitted;
                 if (alreadySubmitted) {
                     return callback({ error: "You have already submitted" });
+                }
+                const safeLanguage = language === "cpp" || language === "java" ? language : "javascript";
+                const judgeResult = await (0, judge_1.judgeSubmission)(room.problem, code, safeLanguage);
+                if (judgeResult.verdict !== "ACCEPTED") {
+                    return callback({
+                        success: false,
+                        verdict: judgeResult.verdict,
+                        details: judgeResult.details,
+                        failedCase: judgeResult.failedCase,
+                    });
                 }
                 // Record submission
                 const submissionTime = Date.now();
@@ -343,12 +436,14 @@ function setupRoomSockets(io) {
                     };
                 }
                 await room.save();
-                socket.to(roomId).emit("opponent_submitted", {
+                socket.to(room.roomCode).emit("opponent_submitted", {
                     userId: socket.id,
                 });
                 callback({
                     success: true,
                     submissionTime,
+                    verdict: judgeResult.verdict,
+                    details: judgeResult.details,
                 });
                 console.log(`User ${socket.id} submitted in room ${roomId}`);
                 // Check if match should end

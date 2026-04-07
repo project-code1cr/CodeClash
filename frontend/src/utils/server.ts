@@ -6,6 +6,18 @@ export function getServerUrl() {
   const SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
 
   if (!SERVER_URL || SERVER_URL === "undefined") {
+    if (typeof window !== "undefined") {
+      const isLocalHost =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+
+      if (!isLocalHost) {
+        console.warn(
+          "NEXT_PUBLIC_BACKEND_URL is missing. Falling back to localhost, which will fail for shared/deployed links."
+        );
+      }
+    }
+
     return DEFAULT_BACKEND_URL;
   }
 

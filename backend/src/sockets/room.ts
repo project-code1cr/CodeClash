@@ -2,15 +2,28 @@ import { Server, Socket } from "socket.io";
 import RoomModel from "../models/room";
 import {
   getRandomPracticeProblem,
+  getNextPracticeProblem,
   HARDCODED_PROBLEM,
   ROOM_STATUS,
 } from "../lib/constants";
+import { JudgeLanguage, judgeSubmission } from "../lib/judge";
 import { checkMatchEnd } from "./helper";
 import { generateRoomId } from "../lib/nanoid";
 
 export function setupRoomSockets(io: Server) {
   io.on("connection", (socket: Socket) => {
     console.log("New client connected", socket.id);
+
+    const reconcilePrivateCreator = async (room: any) => {
+      if (!room?.isPrivate) return room;
+      if (room.joinedUser) return room;
+      if (room.creatorId === socket.id) return room;
+
+      // Private solo matches can survive reconnects by rebinding creator socket.
+      room.creatorId = socket.id;
+      await room.save();
+      return room;
+    };
 
     // Create Room
     socket.on("create_room", async ({ isPrivate } = {}, callback: any) => {
@@ -68,6 +81,11 @@ export function setupRoomSockets(io: Server) {
         if (!room.roomCode) {
           room.roomCode = generateRoomId();
           await room.save();
+        }
+
+        room = await reconcilePrivateCreator(room);
+        if (!room) {
+          return callback({ error: "Room not found" });
         }
 
         const users = room.joinedUser
@@ -188,12 +206,16 @@ export function setupRoomSockets(io: Server) {
         const safeDurationMinutes = Number.isFinite(parsedDurationMinutes)
           ? Math.min(120, Math.max(1, Math.floor(parsedDurationMinutes)))
           : 15;
+        const initialProblem = isPrivate
+          ? getRandomPracticeProblem()
+          : HARDCODED_PROBLEM;
 
         room.status = ROOM_STATUS.ACTIVE;
-        room.problem = isPrivate ? getRandomPracticeProblem() : HARDCODED_PROBLEM;
+        room.problem = initialProblem;
         room.privateQuestionCount = isPrivate ? safeQuestionCount : 1;
         room.privateCurrentQuestion = 1;
         room.privateSolvedCount = 0;
+        room.privateProblemHistory = isPrivate ? [initialProblem.title] : [];
         if (isPrivate) {
           room.duration = safeDurationMinutes * 60;
         }
@@ -234,9 +256,13 @@ export function setupRoomSockets(io: Server) {
     // Private: move to next question
     socket.on("next_private_question", async ({ roomId }, callback: any) => {
       try {
-        const room = await RoomModel.findById(roomId);
+        let room = await RoomModel.findById(roomId);
 
         if (!room) return callback({ error: "Room not found" });
+        room = await reconcilePrivateCreator(room);
+        if (!room) {
+          return callback({ error: "Room not found" });
+        }
         if (!room.isPrivate) return callback({ error: "Not a private match" });
         if (room.creatorId !== socket.id)
           return callback({ error: "Only creator can move to next question" });
@@ -247,8 +273,12 @@ export function setupRoomSockets(io: Server) {
           return callback({ done: true });
         }
 
+        const usedTitles = room.privateProblemHistory || [];
+        const nextProblem = getNextPracticeProblem(usedTitles);
+
         room.privateCurrentQuestion = (room.privateCurrentQuestion || 1) + 1;
-        room.problem = getRandomPracticeProblem();
+        room.problem = nextProblem;
+        room.privateProblemHistory = [...usedTitles, nextProblem.title];
         room.submissions = {
           creator: { submitted: false },
           joiner: { submitted: false },
@@ -274,9 +304,13 @@ export function setupRoomSockets(io: Server) {
     // Private: end match early
     socket.on("end_private_match", async ({ roomId }, callback: any) => {
       try {
-        const room = await RoomModel.findById(roomId);
+        let room = await RoomModel.findById(roomId);
 
         if (!room) return callback({ error: "Room not found" });
+        room = await reconcilePrivateCreator(room);
+        if (!room) {
+          return callback({ error: "Room not found" });
+        }
         if (!room.isPrivate) return callback({ error: "Not a private match" });
         if (room.creatorId !== socket.id)
           return callback({ error: "Only creator can end match" });
@@ -306,9 +340,13 @@ export function setupRoomSockets(io: Server) {
     // End active match early (forfeit)
     socket.on("forfeit_match", async ({ roomId }, callback: any) => {
       try {
-        const room = await RoomModel.findById(roomId);
+        let room = await RoomModel.findById(roomId);
 
         if (!room) return callback({ error: "Room not found" });
+        room = await reconcilePrivateCreator(room);
+        if (!room) {
+          return callback({ error: "Room not found" });
+        }
         if (room.status !== ROOM_STATUS.ACTIVE)
           return callback({ error: "Match is not active" });
 
@@ -351,11 +389,53 @@ export function setupRoomSockets(io: Server) {
     });
 
     // Submit Code
-    socket.on("submit_code", async ({ roomId, code }, callback: any) => {
+    socket.on("run_code", async ({ roomId, code, language }, callback: any) => {
       try {
-        const room = await RoomModel.findById(roomId);
+        let room = await RoomModel.findById(roomId);
 
         if (!room) return callback({ error: "Room not found" });
+        room = await reconcilePrivateCreator(room);
+        if (!room) {
+          return callback({ error: "Room not found" });
+        }
+
+        if (room.status !== ROOM_STATUS.ACTIVE) {
+          return callback({ error: "Match is not active" });
+        }
+
+        const isCreator = socket.id === room.creatorId;
+        const isJoiner = socket.id === room.joinedUser;
+
+        if (!isCreator && !isJoiner) {
+          return callback({ error: "You are not in this room" });
+        }
+
+        const safeLanguage: JudgeLanguage =
+          language === "cpp" || language === "java" ? language : "javascript";
+
+        const judgeResult = await judgeSubmission(room.problem, code, safeLanguage);
+
+        callback({
+          success: judgeResult.verdict === "ACCEPTED",
+          verdict: judgeResult.verdict,
+          details: judgeResult.details,
+          failedCase: judgeResult.failedCase,
+        });
+      } catch (error) {
+        console.error("Run code error:", error);
+        callback({ error: "Failed to run code" });
+      }
+    });
+
+    socket.on("submit_code", async ({ roomId, code, language }, callback: any) => {
+      try {
+        let room = await RoomModel.findById(roomId);
+
+        if (!room) return callback({ error: "Room not found" });
+        room = await reconcilePrivateCreator(room);
+        if (!room) {
+          return callback({ error: "Room not found" });
+        }
 
         if (room.status !== ROOM_STATUS.ACTIVE) {
           return callback({ error: "Match is not active" });
@@ -375,6 +455,20 @@ export function setupRoomSockets(io: Server) {
 
         if (alreadySubmitted) {
           return callback({ error: "You have already submitted" });
+        }
+
+        const safeLanguage: JudgeLanguage =
+          language === "cpp" || language === "java" ? language : "javascript";
+
+        const judgeResult = await judgeSubmission(room.problem, code, safeLanguage);
+
+        if (judgeResult.verdict !== "ACCEPTED") {
+          return callback({
+            success: false,
+            verdict: judgeResult.verdict,
+            details: judgeResult.details,
+            failedCase: judgeResult.failedCase,
+          });
         }
 
         // Record submission
@@ -409,13 +503,15 @@ export function setupRoomSockets(io: Server) {
 
         await room.save();
 
-        socket.to(roomId).emit("opponent_submitted", {
+        socket.to(room.roomCode!).emit("opponent_submitted", {
           userId: socket.id,
         });
 
         callback({
           success: true,
           submissionTime,
+          verdict: judgeResult.verdict,
+          details: judgeResult.details,
         });
 
         console.log(`User ${socket.id} submitted in room ${roomId}`);

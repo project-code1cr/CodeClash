@@ -6,6 +6,7 @@ export interface IRoom {
     privateQuestionCount?: number;
     privateCurrentQuestion?: number;
     privateSolvedCount?: number;
+    privateProblemHistory?: string[];
     creatorId: string;
     joinedUser?: string;
     status?: ROOM_STATUS;

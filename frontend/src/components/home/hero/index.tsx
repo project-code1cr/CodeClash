@@ -19,16 +19,13 @@ export default function Hero() {
       setLoading(true);
       const response = await createRoom();
 
-      if (response.error) {
-        toast.error("Failed to create room");
-        return;
-      }
-
       setLoading(false);
 
       router.push("/waiting/" + response.roomId);
-    } catch (error) {
-      toast.error("Something went wrong");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong"
+      );
     } finally {
       setLoading(false);
     }
@@ -39,15 +36,12 @@ export default function Hero() {
       setLoading(true);
       const response = await createRoom({ isPrivate: true });
 
-      if (response.error) {
-        toast.error("Failed to create private match");
-        return;
-      }
-
       setLoading(false);
       router.push("/waiting/" + response.roomId);
-    } catch (error) {
-      toast.error("Something went wrong");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong"
+      );
     } finally {
       setLoading(false);
     }

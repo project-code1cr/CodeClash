@@ -26,6 +26,10 @@ const RoomSchema = new mongoose_1.Schema({
         type: Number,
         default: 0,
     },
+    privateProblemHistory: {
+        type: [String],
+        default: [],
+    },
     creatorId: {
         type: String,
         required: true,

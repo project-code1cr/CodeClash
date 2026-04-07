@@ -120,3 +120,13 @@ export const getRandomPracticeProblem = (): IProblem => {
   const idx = Math.floor(Math.random() * PRACTICE_PROBLEMS.length);
   return PRACTICE_PROBLEMS[idx];
 };
+
+export const getNextPracticeProblem = (usedTitles: string[] = []): IProblem => {
+  const unseenProblems = PRACTICE_PROBLEMS.filter(
+    (problem) => !usedTitles.includes(problem.title)
+  );
+
+  const pool = unseenProblems.length > 0 ? unseenProblems : PRACTICE_PROBLEMS;
+  const idx = Math.floor(Math.random() * pool.length);
+  return pool[idx];
+};

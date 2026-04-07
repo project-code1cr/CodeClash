@@ -21,6 +21,7 @@ export default function BattleLayout({
     timeRemaining,
     setRoomInfo,
     updateRoomInfo,
+    applyProblemTemplate,
     setOpponentStatus,
     setTimeRemaining,
     setShowPrivateActions,
@@ -45,7 +46,6 @@ export default function BattleLayout({
       setExitCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          router.push("/");
           return 0;
         }
         return prev - 1;
@@ -53,7 +53,13 @@ export default function BattleLayout({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [soloSummary, router]);
+  }, [soloSummary]);
+
+  useEffect(() => {
+    if (!soloSummary) return;
+    if (exitCountdown !== 0) return;
+    router.push("/");
+  }, [exitCountdown, router, soloSummary]);
 
   useEffect(() => {
     async function getRoomData() {
@@ -66,6 +72,7 @@ export default function BattleLayout({
       }
 
       setRoomInfo(response);
+      applyProblemTemplate(response.problem?.title);
 
       if (
         response.status === ROOM_STATUS.FINISHED &&
@@ -162,6 +169,7 @@ export default function BattleLayout({
             }
           : prev
       );
+      applyProblemTemplate(data.problem?.title);
       setShowPrivateActions(false);
       setOutput("");
     });
@@ -203,7 +211,7 @@ export default function BattleLayout({
       socket.off("private_match_ended");
       socket.off("match_ended");
     };
-  }, []);
+  }, [applyProblemTemplate, setOpponentStatus, setOutput, setShowPrivateActions, updateRoomInfo, router, socketId]);
 
   return (
     <>

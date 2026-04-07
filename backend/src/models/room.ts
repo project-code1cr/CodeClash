@@ -27,6 +27,10 @@ const RoomSchema = new Schema<IRoom>(
       type: Number,
       default: 0,
     },
+    privateProblemHistory: {
+      type: [String],
+      default: [],
+    },
     creatorId: {
       type: String,
       required: true,

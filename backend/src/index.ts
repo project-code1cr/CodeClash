@@ -11,12 +11,33 @@ import { setupRoomSockets } from "./sockets";
 dotenv.config();
 
 const app = express();
-const { PORT, MONGO_URI, FRONTEND_URL } = process.env;
+const { PORT, MONGO_URI, FRONTEND_URL, NODE_ENV } = process.env;
+
+const envOrigins = (FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const devOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
+
+const allowedOrigins = new Set<string>([
+  ...envOrigins,
+  ...(NODE_ENV === "production" ? [] : devOrigins),
+]);
+
+const corsOriginValidator = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  if (!origin || allowedOrigins.size === 0 || allowedOrigins.has(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  callback(new Error("Origin not allowed by CORS"));
+};
 
 app.use(express.json());
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: corsOriginValidator,
     credentials: true,
   })
 );
@@ -37,7 +58,10 @@ async function startServer() {
   const server = http.createServer(app);
 
   const io = new SockerServer(server, {
-    cors: { origin: FRONTEND_URL },
+    cors: {
+      origin: corsOriginValidator,
+      credentials: true,
+    },
   });
 
   setupRoomSockets(io);

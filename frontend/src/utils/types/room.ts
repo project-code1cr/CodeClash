@@ -79,6 +79,37 @@ export interface ForfeitMatchRes {
   error?: string;
 }
 
+export interface SubmitCodeRes {
+  success?: boolean;
+  submissionTime?: number;
+  verdict?:
+    | "ACCEPTED"
+    | "WRONG_ANSWER"
+    | "COMPILATION_ERROR"
+    | "RUNTIME_ERROR"
+    | "TLE"
+    | "MLE"
+    | "INTERNAL_ERROR";
+  details?: string;
+  failedCase?: number;
+  error?: string;
+}
+
+export interface RunCodeRes {
+  success?: boolean;
+  verdict?:
+    | "ACCEPTED"
+    | "WRONG_ANSWER"
+    | "COMPILATION_ERROR"
+    | "RUNTIME_ERROR"
+    | "TLE"
+    | "MLE"
+    | "INTERNAL_ERROR";
+  details?: string;
+  failedCase?: number;
+  error?: string;
+}
+
 export interface MatchEndedRes {
   winner?: string;
   endedBy?: string;

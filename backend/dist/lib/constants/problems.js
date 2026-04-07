@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRandomPracticeProblem = exports.PRACTICE_PROBLEMS = exports.HARDCODED_PROBLEM = void 0;
+exports.getNextPracticeProblem = exports.getRandomPracticeProblem = exports.PRACTICE_PROBLEMS = exports.HARDCODED_PROBLEM = void 0;
 exports.HARDCODED_PROBLEM = {
     title: "Two Sum",
     description: `Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
@@ -116,4 +116,11 @@ const getRandomPracticeProblem = () => {
     return exports.PRACTICE_PROBLEMS[idx];
 };
 exports.getRandomPracticeProblem = getRandomPracticeProblem;
+const getNextPracticeProblem = (usedTitles = []) => {
+    const unseenProblems = exports.PRACTICE_PROBLEMS.filter((problem) => !usedTitles.includes(problem.title));
+    const pool = unseenProblems.length > 0 ? unseenProblems : exports.PRACTICE_PROBLEMS;
+    const idx = Math.floor(Math.random() * pool.length);
+    return pool[idx];
+};
+exports.getNextPracticeProblem = getNextPracticeProblem;
 //# sourceMappingURL=problems.js.map

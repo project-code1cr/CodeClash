@@ -2,6 +2,10 @@
 import { motion } from "motion/react";
 import {
   Timer,
+  Copy,
+  Play,
+  Trophy,
+  Users,
   User,
   Check,
   Code2,
@@ -17,7 +21,7 @@ export default function ProductPreview() {
   return (
     <section className="relative py-8 pb-32 overflow-hidden">
       {/* Spotlight from bottom */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[120%] h-[150 pointer-events-none">
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[120%] h-[150%] pointer-events-none">
         <div className="absolute inset-0 bg-linear-to-t from-primary/10 via-primary/5 to-transparent blur-3xl" />
       </div>
 
@@ -44,7 +48,7 @@ export default function ProductPreview() {
                     <Code2 className="h-4 w-4 text-primary" />
                   </div>
                   <span className="font-medium text-foreground">
-                    Welcome back, Developer!
+                    CodeClash Match Room
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -60,7 +64,7 @@ export default function ProductPreview() {
               <div className="flex">
                 {/* Sidebar */}
                 <div className="w-14 border-r border-border/30 py-4 flex flex-col items-center gap-2">
-                  {[LayoutGrid, BarChart3, CreditCard, Wallet, Code2].map(
+                  {[LayoutGrid, Users, Timer, Code2, Trophy].map(
                     (Icon, i) => (
                       <motion.button
                         key={i}
@@ -81,7 +85,7 @@ export default function ProductPreview() {
                 {/* Main Content */}
                 <div className="flex-1 p-6">
                   <div className="grid md:grid-cols-2 gap-4">
-                    {/* Stats Card 1 */}
+                    {/* Room Setup Card */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -92,28 +96,31 @@ export default function ProductPreview() {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                            <Timer className="h-3 w-3 text-primary" />
+                            <Users className="h-3 w-3 text-primary" />
                           </div>
-                          Matches Today
+                          Room Ready
                         </div>
-                        <button className="w-6 h-6 rounded-md hover:bg-secondary/50 flex items-center justify-center">
-                          <span className="text-muted-foreground">›</span>
-                        </button>
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <Copy className="h-3 w-3" />
+                          Copy Code
+                        </div>
                       </div>
-                      <div className="text-3xl font-semibold text-foreground mb-2">
-                        24
+                      <div className="text-2xl font-mono font-semibold text-foreground mb-2 tracking-[0.2em]">
+                        A7K3P2
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 text-xs font-medium">
-                          +18%
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          vs last week
-                        </span>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-400" />
+                          You joined as creator
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-accent" />
+                          Opponent connected
+                        </p>
                       </div>
                     </motion.div>
 
-                    {/* Stats Card 2 */}
+                    {/* Match Config Card */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -124,24 +131,21 @@ export default function ProductPreview() {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <div className="w-6 h-6 rounded-md bg-accent/10 flex items-center justify-center">
-                            <User className="h-3 w-3 text-accent" />
+                            <Play className="h-3 w-3 text-accent" />
                           </div>
-                          Win Rate
+                          Match Config
                         </div>
-                        <button className="w-6 h-6 rounded-md hover:bg-secondary/50 flex items-center justify-center">
-                          <span className="text-muted-foreground">›</span>
-                        </button>
-                      </div>
-                      <div className="text-3xl font-semibold text-foreground mb-2">
-                        78.5%
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 text-xs font-medium">
-                          +5.2%
+                        <span className="text-xs text-primary font-medium">
+                          Private Match
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          this month
-                        </span>
+                      </div>
+                      <div className="text-2xl font-semibold text-foreground mb-2">
+                        3 Questions
+                      </div>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <p>Difficulty: Mixed</p>
+                        <p>Timer: 15:00</p>
+                        <p>Language: JavaScript</p>
                       </div>
                     </motion.div>
                   </div>
@@ -159,7 +163,7 @@ export default function ProductPreview() {
                         <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
                           <Code2 className="h-3 w-3 text-primary" />
                         </div>
-                        Active Match
+                        Live Duel
                       </div>
                       <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                         <span className="relative flex h-1.5 w-1.5">
@@ -170,7 +174,7 @@ export default function ProductPreview() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="grid md:grid-cols-3 gap-4 items-center">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                           <span className="text-sm font-medium text-primary">
@@ -182,13 +186,13 @@ export default function ProductPreview() {
                             You
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Coding...
+                            Solved 2 / 3
                           </p>
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-mono font-semibold text-accent">
-                          04:32
+                          07:41
                         </div>
                         <p className="text-xs text-muted-foreground">
                           remaining
@@ -201,7 +205,7 @@ export default function ProductPreview() {
                           </p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
                             <Check className="h-3 w-3 text-green-400" />{" "}
-                            Submitted
+                            Passed all tests
                           </p>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center">
@@ -210,6 +214,14 @@ export default function ProductPreview() {
                           </span>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-border/40 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Result</span>
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-400 font-medium">
+                        <Trophy className="h-3 w-3" />
+                        Winner by fastest submit
+                      </span>
                     </div>
                   </motion.div>
                 </div>
@@ -225,7 +237,7 @@ export default function ProductPreview() {
             transition={{ delay: 0.5 }}
             className="text-center text-muted-foreground text-sm mt-8"
           >
-            Real-time sync powered by WebSockets
+            Create room | invite opponent | solve live | submit | instant result.
           </motion.p>
         </motion.div>
       </div>

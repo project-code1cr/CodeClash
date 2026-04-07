@@ -14,10 +14,26 @@ const health_1 = __importDefault(require("./controller/health"));
 const sockets_1 = require("./sockets");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-const { PORT, MONGO_URI, FRONTEND_URL } = process.env;
+const { PORT, MONGO_URI, FRONTEND_URL, NODE_ENV } = process.env;
+const envOrigins = (FRONTEND_URL || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+const devOrigins = ["http://localhost:3000", "http://127.0.0.1:3000"];
+const allowedOrigins = new Set([
+    ...envOrigins,
+    ...(NODE_ENV === "production" ? [] : devOrigins),
+]);
+const corsOriginValidator = (origin, callback) => {
+    if (!origin || allowedOrigins.size === 0 || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+    }
+    callback(new Error("Origin not allowed by CORS"));
+};
 app.use(express_1.default.json());
 app.use((0, cors_1.default)({
-    origin: FRONTEND_URL,
+    origin: corsOriginValidator,
     credentials: true,
 }));
 app.use("/api", controller_1.default);
@@ -32,7 +48,10 @@ async function startServer() {
     await (0, db_1.default)(MONGO_URI);
     const server = http_1.default.createServer(app);
     const io = new socket_io_1.Server(server, {
-        cors: { origin: FRONTEND_URL },
+        cors: {
+            origin: corsOriginValidator,
+            credentials: true,
+        },
     });
     (0, sockets_1.setupRoomSockets)(io);
     server.listen(Number(PORT), () => console.log(`Server running on port ${PORT}`));

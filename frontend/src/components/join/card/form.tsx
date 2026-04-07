@@ -22,8 +22,10 @@ export default function JoinForm() {
       setIsJoining(true);
       const response = await joinRoom(roomCode);
       router.push("/waiting/" + response.roomId);
-    } catch (error: any) {
-      toast.error(error);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to join room");
+    } finally {
+      setIsJoining(false);
     }
   };
 

@@ -48,6 +48,7 @@ export default function RoomHeader() {
           height={50}
           width={50}
           alt="logo-image"
+          style={{ width: "auto", height: "auto" }}
         />
         <div className="h-6 w-px bg-border/50" />
         <span className="text-sm text-muted-foreground font-mono">

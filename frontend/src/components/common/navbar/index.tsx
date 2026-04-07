@@ -43,6 +43,8 @@ export default function Navbar() {
               height={50}
               width={50}
               alt="logo-image"
+              priority
+              style={{ width: "auto", height: "auto" }}
             />
             <span className="text-lg font-semibold tracking-tight text-foreground">
               CodeClash

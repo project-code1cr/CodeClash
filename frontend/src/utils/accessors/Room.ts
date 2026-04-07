@@ -7,139 +7,113 @@ import {
   GetRoomInfoRes,
   JoinRoomRes,
   NextPrivateQuestionRes,
+  RunCodeRes,
+  SubmitCodeRes,
   StartMatchRes,
 } from "../types/room";
+import type { ProgrammingLanguage } from "@/store/useBattleArenaStore";
 
 export class RoomAccessor {
-  public createRoom(payload: CreateRoomPayload = {}): Promise<CreateRoomRes> {
-    return new Promise((res, rej) => {
-      try {
-        const socket = getSocket();
+  private emitWithAck = <TResponse>(
+    event: string,
+    payload?: unknown
+  ): Promise<TResponse> => {
+    const socket = getSocket();
 
-        socket.emit("create_room", payload, (response: CreateRoomRes) => {
-          if (response.creatorId) {
-            localStorage.setItem("room_creator", response.creatorId);
-          }
+    return new Promise((resolve, reject) => {
+      socket.timeout(10000).emit(event, payload ?? {}, (err: Error | null, response: TResponse) => {
+        if (err) {
+          reject(
+            new Error(
+              "Could not connect to the server. Please check backend URL and CORS settings."
+            )
+          );
+          return;
+        }
 
-          res(response);
-        });
-      } catch (error) {
-        console.log("CREATE ROOM ERROR:", error);
-        rej(error);
-      }
+        const responseError = (response as { error?: string } | undefined)?.error;
+        if (responseError) {
+          reject(new Error(responseError));
+          return;
+        }
+
+        resolve(response);
+      });
     });
-  }
+  };
 
-  public getRoomInfo(roomId: string): Promise<GetRoomInfoRes> {
-    return new Promise((res, rej) => {
-      try {
-        const socket = getSocket();
+  public createRoom = (payload: CreateRoomPayload = {}): Promise<CreateRoomRes> => {
+    return this.emitWithAck<CreateRoomRes>("create_room", payload).then(
+      (response) => {
+        if (response.creatorId) {
+          localStorage.setItem("room_creator", response.creatorId);
+        }
 
-        socket.emit("get_room_info", { roomId }, (response: GetRoomInfoRes) => {
-          res(response);
-        });
-      } catch (error) {
-        console.log("GET ROOM INFO ERROR:", error);
-        rej(error);
+        return response;
       }
-    });
-  }
+    );
+  };
 
-  public async joinRoom(roomCode: string): Promise<JoinRoomRes> {
-    return new Promise((res, rej) => {
-      try {
-        const socket = getSocket();
+  public getRoomInfo = (roomId: string): Promise<GetRoomInfoRes> => {
+    return this.emitWithAck<GetRoomInfoRes>("get_room_info", { roomId });
+  };
 
-        socket.emit("join_room", { roomCode }, (response: JoinRoomRes) => {
-          res(response);
-        });
-      } catch (error) {
-        console.log("JOIN ROOM ERROR:", error);
-        rej(error);
-      }
-    });
-  }
+  public joinRoom = async (roomCode: string): Promise<JoinRoomRes> => {
+    return this.emitWithAck<JoinRoomRes>("join_room", { roomCode });
+  };
 
-  public async startMatch(
+  public startMatch = async (
     roomId: string,
     options?: { questionCount?: number; durationMinutes?: number }
-  ): Promise<StartMatchRes> {
-    return new Promise((res, rej) => {
-      try {
-        const socket = getSocket();
-
-        socket.emit(
-          "start_match",
-          {
-            roomId,
-            questionCount: options?.questionCount,
-            durationMinutes: options?.durationMinutes,
-          },
-          (response: StartMatchRes) => {
-            res(response);
-          }
-        );
-      } catch (error) {
-        console.log("START MATCH ERROR:", error);
-        rej(error);
-      }
+  ): Promise<StartMatchRes> => {
+    return this.emitWithAck<StartMatchRes>("start_match", {
+      roomId,
+      questionCount: options?.questionCount,
+      durationMinutes: options?.durationMinutes,
     });
-  }
+  };
 
-  public async nextPrivateQuestion(
+  public nextPrivateQuestion = async (
     roomId: string
-  ): Promise<NextPrivateQuestionRes> {
-    return new Promise((res, rej) => {
-      try {
-        const socket = getSocket();
-
-        socket.emit(
-          "next_private_question",
-          { roomId },
-          (response: NextPrivateQuestionRes) => {
-            res(response);
-          }
-        );
-      } catch (error) {
-        console.log("NEXT PRIVATE QUESTION ERROR:", error);
-        rej(error);
-      }
+  ): Promise<NextPrivateQuestionRes> => {
+    return this.emitWithAck<NextPrivateQuestionRes>("next_private_question", {
+      roomId,
     });
-  }
+  };
 
-  public async endPrivateMatch(roomId: string): Promise<EndPrivateMatchRes> {
-    return new Promise((res, rej) => {
-      try {
-        const socket = getSocket();
-
-        socket.emit(
-          "end_private_match",
-          { roomId },
-          (response: EndPrivateMatchRes) => {
-            res(response);
-          }
-        );
-      } catch (error) {
-        console.log("END PRIVATE MATCH ERROR:", error);
-        rej(error);
-      }
+  public endPrivateMatch = async (roomId: string): Promise<EndPrivateMatchRes> => {
+    return this.emitWithAck<EndPrivateMatchRes>("end_private_match", {
+      roomId,
     });
-  }
+  };
 
-  public async forfeitMatch(roomId: string): Promise<ForfeitMatchRes> {
-    return new Promise((res, rej) => {
-      try {
-        const socket = getSocket();
+  public forfeitMatch = async (roomId: string): Promise<ForfeitMatchRes> => {
+    return this.emitWithAck<ForfeitMatchRes>("forfeit_match", { roomId });
+  };
 
-        socket.emit("forfeit_match", { roomId }, (response: ForfeitMatchRes) => {
-          res(response);
-        });
-      } catch (error) {
-        console.log("FORFEIT MATCH ERROR:", error);
-        rej(error);
-      }
+  public submitCode = async (
+    roomId: string,
+    code: string,
+    language: ProgrammingLanguage
+  ): Promise<SubmitCodeRes> => {
+    return this.emitWithAck<SubmitCodeRes>("submit_code", {
+      roomId,
+      code,
+      language,
     });
-  }
+  };
+
+  public runCode = async (
+    roomId: string,
+    code: string,
+    language: ProgrammingLanguage
+  ): Promise<RunCodeRes> => {
+    return this.emitWithAck<RunCodeRes>("run_code", {
+      roomId,
+      code,
+      language,
+    });
+  };
 
   public getTimerColor = (timeRemaining: number) => {
     if (timeRemaining && timeRemaining <= 60) return "text-red-500";
