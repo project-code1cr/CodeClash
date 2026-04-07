@@ -13,7 +13,7 @@ export const getSocket = () => {
     }
 
     socket = io(SERVER_URL, {
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
     });
   }
 
