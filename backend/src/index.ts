@@ -43,15 +43,33 @@ const isAllowedVercelPreviewOrigin = (origin: string): boolean => {
 };
 
 const corsOriginValidator = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-  if (
-    !origin ||
-    allowedOrigins.size === 0 ||
-    allowedOrigins.has(origin) ||
-    isAllowedVercelPreviewOrigin(origin)
-  ) {
+  // Allow requests with no origin (like mobile apps, curl, Postman)
+  if (!origin) {
     callback(null, true);
     return;
   }
+
+  // Allow if explicitly in allowed list
+  if (allowedOrigins.size === 0 || allowedOrigins.has(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  // Allow Vercel preview domains
+  if (isAllowedVercelPreviewOrigin(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  // Always allow localhost for development
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      callback(null, true);
+      return;
+    }
+  } catch {}
 
   callback(new Error("Origin not allowed by CORS"));
 };
