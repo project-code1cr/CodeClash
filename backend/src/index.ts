@@ -25,8 +25,30 @@ const allowedOrigins = new Set<string>([
   ...(NODE_ENV === "production" ? [] : devOrigins),
 ]);
 
+const isAllowedVercelPreviewOrigin = (origin: string): boolean => {
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Allow this project's Vercel preview/prod style domains to avoid
+    // CORS breakage whenever preview suffix changes.
+    return (
+      parsed.protocol === "https:" &&
+      hostname.endsWith(".vercel.app") &&
+      hostname.startsWith("code-clash-")
+    );
+  } catch {
+    return false;
+  }
+};
+
 const corsOriginValidator = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-  if (!origin || allowedOrigins.size === 0 || allowedOrigins.has(origin)) {
+  if (
+    !origin ||
+    allowedOrigins.size === 0 ||
+    allowedOrigins.has(origin) ||
+    isAllowedVercelPreviewOrigin(origin)
+  ) {
     callback(null, true);
     return;
   }
